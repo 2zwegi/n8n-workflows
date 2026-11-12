@@ -1,0 +1,856 @@
+{
+  "name": "WhatsApp Bulk Sender with Delivery Tracking",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Workflow Configuration1').first().json.chatId;\nconst pendingData = $('Read Pending Message1').all();\nconst userMessage = pendingData[pendingData.length - 1].json.userMessage;\nconst contacts = $('Read Contact List1').all();\nconst results = [];\nconst timestamp = new Date().toISOString();\n\nfor (let i = 0; i < contacts.length; i++) {\n  const contact = contacts[i];\n  const name = contact.json.nom;\n  let phone = contact.json.numero.toString();\n  phone = phone.replace(/\\D/g, '');\n  if (!phone.startsWith('216')) {\n    phone = '216' + phone;\n  }\n  \n  const personalizedMessage = userMessage\n    .replace(/\\{\\{name\\}\\}/g, name)\n    .replace(/\\{\\{date\\}\\}/g, new Date().toLocaleDateString('ar-TN'))\n    .replace(/\\{\\{time\\}\\}/g, new Date().toLocaleTimeString('ar-TN'));\n  \n  // نضيف ID فريد لكل رسالة\n  const messageId = timestamp + '_' + phone;\n  \n  results.push({\n    json: {\n      messageId: messageId,\n      name: name,\n      phone: phone,\n      message: personalizedMessage,\n      chatId: phone + '@c.us',\n      timestamp: timestamp\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        4064
+      ],
+      "id": "1cbbfcbc-1c28-4c76-8cb6-f255ffc2d4fe",
+      "name": "Code - Prepare Messages"
+    },
+    {
+      "parameters": {
+        "jsCode": "// نجيب البيانات من الـ input\nconst input = $input.item.json;\nconst whatsappResponse = input;\n\n// نجيب البيانات الأصلية من Code - Prepare Messages\nconst originalData = $('Code - Prepare Messages').item.json;\n\n// نحدد الـ status بناءً على response\nlet status = 'Failed';\nlet errorMsg = '';\n\nif (whatsappResponse && !whatsappResponse.error) {\n  status = 'Sent';\n} else {\n  errorMsg = whatsappResponse.error || 'Unknown error';\n}\n\nreturn [{\n  json: {\n    messageId: originalData.messageId,\n    timestamp: new Date().toISOString(),\n    name: originalData.name,\n    phone: originalData.phone,\n    message: originalData.message,\n    status: status,\n    sentAt: new Date().toLocaleString('ar-TN'),\n    delivered: '',\n    read: '',\n    readAt: '',\n    errorMessage: errorMsg\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        4064
+      ],
+      "id": "7f80ab67-0de1-4b45-8fb3-29cf44859731",
+      "name": "Code - Format for Tracking"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_4",
+          "mode": "id",
+          "cachedResultName": "Tracking "
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "messageId",
+              "displayName": "messageId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sentAt",
+              "displayName": "sentAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "delivered",
+              "displayName": "delivered",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "read",
+              "displayName": "read",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "readAt",
+              "displayName": "readAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "errorMessage",
+              "displayName": "errorMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        768,
+        4064
+      ],
+      "id": "e39d6050-a12a-47dc-81f5-9cd33907f2db",
+      "name": "Save to Tracking Sheet"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        4064
+      ],
+      "id": "cd482a08-7353-4f47-a349-c012d6c642d6",
+      "name": "Loop Back to Split"
+    },
+    {
+      "parameters": {
+        "jsCode": "// نجيب كل الـ tracking data\nconst allTracking = $('Save to Tracking Sheet').all();\nconst chatId = $('Workflow Configuration1').first().json.chatId;\n\nlet totalSent = 0;\nlet totalFailed = 0;\nconst failedNames = [];\n\nallTracking.forEach(item => {\n  if (item.json.status === 'Sent') {\n    totalSent++;\n  } else {\n    totalFailed++;\n    failedNames.push(item.json.name);\n  }\n});\n\nconst total = totalSent + totalFailed;\nconst successRate = ((totalSent / total) * 100).toFixed(1);\n\nlet message = '✅ اكتمل الإرسال!\\n\\n';\nmessage += '📊 الإحصائيات:\\n';\nmessage += '━━━━━━━━━━━━━━━\\n';\nmessage += '📤 إجمالي: ' + total + '\\n';\nmessage += '✅ نجحت: ' + totalSent + '\\n';\nmessage += '❌ فشلت: ' + totalFailed + '\\n';\nmessage += '📈 معدل النجاح: ' + successRate + '%\\n';\n\nif (totalFailed > 0) {\n  message += '\\n⚠️ الفاشلة:\\n' + failedNames.join(', ');\n}\n\nreturn [{\n  json: {\n    message: message,\n    chatId: chatId,\n    stats: {\n      total: total,\n      sent: totalSent,\n      failed: totalFailed,\n      successRate: successRate\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        4064
+      ],
+      "id": "d3d7b1f3-3d65-4100-a9de-317bc21c5072",
+      "name": "Code - Build Statistics"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        4064
+      ],
+      "id": "2c5fb851-8316-4326-ad52-2fa335ba613b",
+      "name": "Send Statistics to Telegram"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_5",
+          "mode": "id",
+          "cachedResultName": "pending"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -368,
+        3680
+      ],
+      "id": "eebf282b-0925-4f0f-9b82-c780759f9839",
+      "name": "Append to Pending Sheet"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-bulk-sender-tracking-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1440,
+        4272
+      ],
+      "id": "db9485ca-9d1a-4381-a7e9-e4159645b123",
+      "name": "Webhook - Status Updates"
+    },
+    {
+      "parameters": {
+        "jsCode": "// نجيب البيانات من الـ webhook\nconst webhookData = $input.item.json;\n\nconsole.log('Webhook received:', JSON.stringify(webhookData.body));\n\nconst eventType = webhookData.body?.event;\n\nif (!eventType || !eventType.includes('message')) {\n  console.log('Skipping non-message event:', eventType);\n  return [];\n}\n\nconst payload = webhookData.body?.payload || {};\nconst messageId = payload.id || payload.messageId;\nconst ack = payload.ack;\n\n// نستخرج الـ phone من الـ messageId\n// مثال: \"true_216XXXXXXXX@c.us_...\"\nlet phone = '';\nconst match = messageId.match(/(\\d{12,})/); // نجيب أول رقم طويل\nif (match) {\n  phone = match[1];\n}\n\nlet status = '';\nif (ack === 2) status = 'delivered';\nif (ack === 3) status = 'read';\n\nif (!messageId || !status) {\n  console.log('Missing messageId or status, skipping');\n  return [];\n}\n\nreturn [{\n  json: {\n    messageId: messageId,\n    phone: phone,\n    status: status,\n    timestamp: new Date().toISOString(),\n    readAt: status === 'read' ? new Date().toLocaleString('ar-TN') : '',\n    ack: ack\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        4272
+      ],
+      "id": "85c0283f-ee81-4ed8-bfcf-4f78a3935ee5",
+      "name": "Code - Parse Webhook Data"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_4",
+          "mode": "id",
+          "cachedResultName": "Tracking "
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "messageId",
+              "displayName": "messageId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sentAt",
+              "displayName": "sentAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "delivered",
+              "displayName": "delivered",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "read",
+              "displayName": "read",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "readAt",
+              "displayName": "readAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "errorMessage",
+              "displayName": "errorMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ack",
+              "displayName": "ack",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1056,
+        4272
+      ],
+      "id": "a1d6f224-8ed4-46df-9d7f-19c7e2f15243",
+      "name": "Update Tracking Sheet"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "id": "f45f2e2a-5b45-4077-a080-d9be707f2534",
+      "name": "Telegram Chat Input1",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1472,
+        3872
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "userMessage",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12569786-d740-4630-bfe2-ac07a48aa817",
+      "name": "Workflow Configuration1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1232,
+        3872
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_6",
+          "mode": "id",
+          "cachedResultName": "contact"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "options": {}
+      },
+      "id": "36b15985-bf5e-48f8-bf87-fda23258e805",
+      "name": "Read Contact List1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1040,
+        3872
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const userMessage = $('Workflow Configuration1').item.json.userMessage;\nconst chatId = $('Workflow Configuration1').item.json.chatId;\nconst contacts = $('Read Contact List1').all();\n\nif (userMessage.trim().toLowerCase() === 'ok') {\n  return [{\n    json: {\n      type: 'send',\n      chatId: chatId\n    }\n  }];\n}\n\nconst names = contacts.map(c => c.json.nom).join(', ');\nconst count = contacts.length;\n\nreturn [{\n  json: {\n    type: 'confirm',\n    message: '📝 الرسالة:\\n\\n\"' + userMessage + '\"\\n\\n👥 للـ contacts (' + count + '):\\n' + names + '\\n\\n✅ اكتب \"ok\" للإرسال',\n    chatId: chatId,\n    userMessage: userMessage\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        3872
+      ],
+      "id": "8e4958fa-165a-47ef-a76e-1c6ae9863ac7",
+      "name": "Code - Check Input1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Workflow Configuration1').first().json.chatId }}",
+        "text": "={{ $('Code - Check Input1').item.json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        3680
+      ],
+      "id": "37a239f8-bc04-431e-b9dd-4bf70d6d518f",
+      "name": "Send Confirm to Telegram1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_5",
+          "mode": "id",
+          "cachedResultName": "pending"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "options": {}
+      },
+      "id": "dd0b0467-a2cf-466f-94fb-9053ba3cdded",
+      "name": "Read Pending Message1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -368,
+        4064
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        4064
+      ],
+      "id": "3eafd504-88e7-4dd6-842c-7a6a0c5424bb",
+      "name": "Split In Batches1"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        4064
+      ],
+      "id": "7d337d3a-10ae-4b54-a391-29fdce21874b",
+      "name": "Wait 3 Seconds1"
+    },
+    {
+      "parameters": {
+        "resource": "Chatting",
+        "operation": "Send Text",
+        "session": "default",
+        "chatId": "={{ $json.phone }}",
+        "text": "={{ $json.message }}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-waha.WAHA",
+      "typeVersion": 202502,
+      "position": [
+        384,
+        4064
+      ],
+      "id": "4a067006-422d-44ca-adf8-8b208d5b09db",
+      "name": "Send WhatsApp Message1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "40a88420-a484-4acf-9f76-dceb19cb7b88",
+              "leftValue": "={{ $input.item.json.type }}",
+              "rightValue": "confirm",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -656,
+        3872
+      ],
+      "id": "4051ad92-aba5-451e-822e-812ceb0dd7f5",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Append to Pending Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Confirm to Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare Messages": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Format for Tracking": {
+      "main": [
+        [
+          {
+            "node": "Save to Tracking Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Tracking Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Back to Split",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back to Split": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Statistics": {
+      "main": [
+        [
+          {
+            "node": "Send Statistics to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Status Updates": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "Update Tracking Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Chat Input1": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration1": {
+      "main": [
+        [
+          {
+            "node": "Read Contact List1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Contact List1": {
+      "main": [
+        [
+          {
+            "node": "Code - Check Input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Check Input1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pending Message1": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches1": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Statistics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 3 Seconds1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 Seconds1": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message1": {
+      "main": [
+        [
+          {
+            "node": "Code - Format for Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Append to Pending Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Pending Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "tags": []
+}

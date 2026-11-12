@@ -1,0 +1,1167 @@
+{
+  "name": "Messenger AI Lead Capture (RAG + Phone Collection)",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "senderId",
+              "value": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "senderName",
+              "value": "={{ $('HTTP Request1').item.json.first_name }} {{ $('HTTP Request1').item.json.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "messageText",
+              "value": "={{ $('Webhook').item.json.body.entry[0].messaging[0].message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3b01a9eb-0861-49c1-8773-e3ec7a927b03",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1984,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Workflow Configuration').item.json.messageText }}",
+        "options": {
+          "systemMessage": "=أنت المساعد الذكي لـ [BUSINESS_NAME] المتخصصة في [BUSINESS_DOMAIN]، مهمتك الأساسية هي جمع رقم هاتف تونسي صحيح بأسلوب ودود ومقنع بالعربية الفصحى في سطر واحد فقط دون أي فواصل أسطر. إذا ذكر المستخدم اسمه خاطبه به، واستخدم قاعدة المعرفة الخاصة بالنشاط (نقاط القوة، الضمانات، العروض) لإقناعه بالخدمة. الرقم التونسي الصحيح يتكون من 8 أرقام يبدأ بـ (2، 4، 5، 9)، وعليك معالجته بإزالة المسافات والرموز مثل (+216 أو 00216) وأخذ آخر 8 أرقام. إذا قدم المستخدم رقماً صحيحاً، اكتب حصراً [PHONE: 8digits] متبوعة بعبارة شكر، وإذا أخطأ مرتين وضح له الصيغة الصحيحة. ممنوع منعاً باتاً الدخول في محادثات جانبية أو الرد على المماطلة؛ ارجع دائماً لطلب الرقم بأسلوب القيمة المضافة (عرض خاص، استشارة مجانية، هدية). إذا وصلت المحادثة لـ 5 رسائل دون الحصول على الرقم، توقف فوراً واكتب: \"شكراً على وقتك، إذا غيرت رأيك يمكنك مراسلتنا في أي وقت 😊\". التزم بالعربية الفصحى السليمة، استخدم 1-2 إيموجي بحد أقصى، واجعل كل ردودك في سطر واحد متواصل بدون \\n أو breaks"
+        }
+      },
+      "id": "7c1b09ad-2a27-43d4-8933-c40ff20f3190",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2208,
+        128
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "aiResponse",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "phoneNumber",
+              "value": "={{ $json.output.match(/\\[PHONE:\\s*([2459]\\d{7})\\]/)?.[1] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "senderName",
+              "value": "={{ $('Workflow Configuration').item.json.senderName }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "senderId",
+              "value": "={{ $('Workflow Configuration').item.json.senderId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "570effbc-a6c1-41bd-8c67-21911f42accf",
+      "name": "Extract Phone Number",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2576,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.phoneNumber }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "312c67db-68e7-4a30-929c-92c87c784baa"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d172298d-a959-4243-9c80-eec870b365c7",
+      "name": "Check Phone Number Extracted",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        2736,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "Name",
+              "value": "={{ $json.senderName }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "Phone Number",
+              "value": "={{ $json.phoneNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "Sender ID",
+              "value": "={{ $json.senderId }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "Timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c78509c-1846-4d5a-8059-f5baca22dec4",
+      "name": "Prepare Data for Sheets",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2912,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v24.0/{{ $('Webhook').item.json.body.entry[0].messaging[0].recipient.id }}/messages",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "access_token",
+              "value": "YOUR_PAGE_ACCESS_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\": {\n    \"id\": \"{{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}\"\n  },\n  \"messaging_type\": \"RESPONSE\",\n  \"message\": {\n    \"text\": {{ JSON.stringify($json.output.replace(/\\n/g, ' ').replace(/\\\\n/g, ' ').trim()) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2736,
+        112
+      ],
+      "id": "1be93660-8296-40bd-ae00-ac8f61fe97a3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "messenger-ai-lead-capture-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        128
+      ],
+      "id": "d5b6f590-370c-42e3-a3a9-527e2d49b2b3",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c9194317-bf87-47b4-82a1-01f256a9a13f",
+              "leftValue": "={{ $json.query['hub.mode'] }}",
+              "rightValue": "subscribe",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "b0b94c2b-2b6b-4673-b167-8001b7be8b05",
+              "leftValue": "={{ $json.query['hub.verify_token'] }}",
+              "rightValue": "YOUR_VERIFY_TOKEN",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        112
+      ],
+      "id": "12ec4c8d-2b07-4fb9-a3ec-116da84fa1ef",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $('Webhook').item.json.query['hub.challenge'] }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain"
+              }
+            ]
+          },
+          "enableStreaming": true
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        736,
+        96
+      ],
+      "id": "0bbc3d67-6891-44be-b83c-b05f55b6c5b3",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/{{ $json.body.entry[0].messaging[0].sender.id }}?fields=first_name,last_name&access_token=YOUR_PAGE_ACCESS_TOKEN",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        736,
+        352
+      ],
+      "id": "cabe2c1e-0652-4d52-b4b8-b2e7e14aa23c",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_1",
+          "mode": "id",
+          "cachedResultName": "n8n_contact"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sender ID",
+              "displayName": "Sender ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8f6def21-8caf-4604-854d-ac1136e0fcb1",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3216,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        448
+      ],
+      "id": "486b8ff3-c267-4034-8261-d6fcb11c616e",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if message is from user (not echo)\nconst messaging = $input.item.json.body?.entry?.[0]?.messaging?.[0];\n\n// If no message or is echo, stop execution\nif (!messaging?.message || messaging.message.is_echo) {\n  return [];\n}\n\n// Otherwise, pass the data through\nreturn [$input.item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        352
+      ],
+      "id": "8a284235-3dac-44e0-ab62-059a21454aa6",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "lead@example.com",
+        "additionalFields": {
+          "firstName": "={{ $('Prepare Data for Sheets').item.json.Name }}\n",
+          "leadStatus": "NEW",
+          "phoneNumber": "={{ $('Prepare Data for Sheets').item.json[\"Phone Number\"] }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        3232,
+        384
+      ],
+      "id": "f873efff-dc32-405b-87c4-19e58a1049c3",
+      "name": "Create or update a contact"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=={{ $('Workflow Configuration').item.json.senderId }}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        2112,
+        480
+      ],
+      "id": "f6eb3288-2f8d-4d60-b806-8b63811d3dd8",
+      "name": "Postgres Chat Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "GET date form this handbook",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 8,
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        2272,
+        480
+      ],
+      "id": "a7e253f4-4d6b-4820-8b92-ec0a5ca8f4b1",
+      "name": "Supabase Vector Store"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_2",
+          "mode": "id",
+          "cachedResultName": "Business handbook"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2768,
+        608
+      ],
+      "id": "4022e23b-a691-48be-8e0a-b35f6d72649d",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        3152,
+        608
+      ],
+      "id": "bfe1899c-7ad9-45f6-af55-c84677668ac5",
+      "name": "Supabase Vector Store1"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        832
+      ],
+      "id": "9b105174-c900-49d0-9ff1-fd474c97b8e4",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2256,
+        816
+      ],
+      "id": "f9fa6e0b-b1da-49a1-a725-7d2458f4f661",
+      "name": "Embeddings Google Gemini"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1753d38-b925-43bb-a47c-185329ee4ab6",
+              "leftValue": "={{ $json.client_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        160
+      ],
+      "id": "596bdac3-1c37-4aee-980f-dfab9a566057",
+      "name": "Client Exists?"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_3",
+          "mode": "id",
+          "cachedResultName": "Client_Modes"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "client_id": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+            "last_updated": "={{ $now.toISO() }}",
+            "mode": "AI",
+            "Name ": "={{ $('HTTP Request1').item.json.first_name }} {{ $('HTTP Request1').item.json.last_name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "client_id",
+              "displayName": "client_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name ",
+              "displayName": "Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last_updated",
+              "displayName": "last_updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        400
+      ],
+      "id": "a41a44db-7c81-44e8-9d7e-1c266c84a700",
+      "name": "Create Client (AI Mode)"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_FILE_ID_3",
+          "mode": "id",
+          "cachedResultName": "Client_Modes"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "client_id",
+              "lookupValue": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1024,
+        272
+      ],
+      "id": "97a541e8-4a94-4461-80b8-2688263054cf",
+      "name": "Lookup Client Mode",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "56be3d90-5ee6-4a4a-a07d-31371850bc5a",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "AI",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1648,
+        144
+      ],
+      "id": "15721e12-990d-4197-b165-3ca3e8a214bd",
+      "name": "Is AI Mode?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Client in MANUAL mode. No AI response sent."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        400
+      ],
+      "id": "d6888f38-0075-4603-961a-b632bfce5b4e",
+      "name": "Stop (MANUAL Mode)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e339e7ea-0e7a-4567-b464-c85e0618bf90",
+              "name": "mode",
+              "value": "AI",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        400
+      ],
+      "id": "ec5da52c-ba78-4019-b1ed-4c45459ced6d",
+      "name": "Force AI Mode"
+    },
+    {
+      "parameters": {
+        "content": "DOCUMENT PROCESSING (Setup)\n\nThis section is for initial setup only:\n\n1. Download file - Fetches business handbook from Google Drive\n2. Default Data Loader - Extracts text from the PDF document\n3. Supabase Vector Store (insert mode) - Stores document chunks as embeddings\n\nThis runs once to populate the knowledge base. The AI Agent uses the retrieve mode to query this data during conversations.",
+        "height": 376,
+        "width": 960,
+        "color": 4
+      },
+      "id": "7b6937be-efea-4218-be6f-cc31c7e33829",
+      "name": "Note: Document Processing",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "content": "MESSAGE FILTER\n\nFilters out echo messages (messages sent by the bot itself) to prevent infinite loops.\n\nOnly allows genuine user messages to proceed through the workflow.\n\nFetches user profile (first name, last name) from Facebook Graph API.",
+        "height": 272,
+        "width": 776,
+        "color": 4
+      },
+      "id": "44a89129-d413-4247-8394-f04e62dd4bcf",
+      "name": "Note: Message Filter",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "VERIFICATION HANDLER\n\nFacebook requires webhook verification before activation. This IF node checks:\n- hub.mode = \"subscribe\"\n- hub.verify_token = \"YOUR_VERIFY_TOKEN\"\n\nIf valid, it responds with the challenge token to complete verification.",
+        "height": 208,
+        "width": 776,
+        "color": 4
+      },
+      "id": "fd83c6b0-4a8c-4aab-a5af-d5944c4447f4",
+      "name": "Note: Verification Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "WEBHOOK ENTRY POINT\n\nThis webhook receives incoming messages from Facebook Messenger. It handles both:\n1. Verification requests (GET) from Facebook\n2. Actual message events (POST) from users\n\nThe webhook URL is registered with Facebook to receive real-time message notifications.",
+        "height": 208,
+        "width": 488,
+        "color": 4
+      },
+      "id": "b27603fb-07fe-4bc6-bc04-d30ea473ed09",
+      "name": "Note: Webhook Entry Point",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "DATA STORAGE\n\nWhen a phone number is successfully collected, the lead data is saved to:\n\n1. Google Sheets - For easy viewing and manual follow-up\n2. HubSpot CRM - Creates or updates contact with lead status \"NEW\"\n\nStored data includes: Name, Phone Number, Sender ID, Timestamp",
+        "height": 516,
+        "width": 444,
+        "color": 4
+      },
+      "id": "7e3bd2c6-16f8-4825-a511-0886ce5919bd",
+      "name": "Note: Data Storage",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3056,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "AI MEMORY & KNOWLEDGE BASE\n\nPostgres Chat Memory: Stores conversation history per user (5 messages window) so the AI can reference previous messages.\n\nSupabase Vector Store: Contains embedded business information from Google Drive document. The AI retrieves relevant facts to answer questions and build credibility.\n\nEmbeddings Google Gemini: Converts text to vector embeddings for semantic search.",
+        "height": 680,
+        "width": 608,
+        "color": 5
+      },
+      "id": "3eb7d045-c190-45c1-bf2c-4f483f311cfe",
+      "name": "Note: AI Memory & Knowledge Base",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "CLIENT MODE MANAGEMENT\n\nLooks up client in Google Sheets to check their mode (AI or MANUAL).\n\n- If client exists and mode = AI → Continue to AI Agent\n- If client exists and mode = MANUAL → Stop workflow\n- If client doesn't exist → Create new client in AI mode\n\nThis allows manual override to disable AI responses for specific users.",
+        "height": 500,
+        "width": 940,
+        "color": 6
+      },
+      "id": "fe1ff520-83c9-4225-a712-5f54d23c2e8d",
+      "name": "Note: Client Mode Management",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        960,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "content": "PHONE NUMBER EXTRACTION\n\nExtracts phone number from AI response using regex pattern:\n[PHONE: ########]\n\nIf a valid phone number is found, it proceeds to save the lead data.\n\nThe AI is instructed to output this specific format when it successfully collects a valid Tunisian phone number.",
+        "height": 292,
+        "width": 492,
+        "color": 4
+      },
+      "id": "1fe96815-15bc-490f-bbb7-4583f8f44a2f",
+      "name": "Note: Phone Number Extraction",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "content": "AI CONVERSATION ENGINE\n\nThe AI Agent orchestrates the conversation using:\n- Google Gemini Chat Model for natural language understanding\n- Postgres Chat Memory to maintain conversation history per user\n- Supabase Vector Store for retrieving business information\n\nThe agent's goal: Collect a valid Tunisian phone number (8 digits starting with 2, 4, 5, or 9) using persuasive techniques based on the business's value proposition.",
+        "height": 216,
+        "width": 608,
+        "color": 5
+      },
+      "id": "c5b4d242-00d8-4fb5-a0fd-388fd268f48f",
+      "name": "Note: AI Conversation Engine",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        64
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract Phone Number",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Phone Number": {
+      "main": [
+        [
+          {
+            "node": "Check Phone Number Extracted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Phone Number Extracted": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data for Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data for Sheets": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create or update a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Lookup Client Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        []
+      ]
+    },
+    "Client Exists?": {
+      "main": [
+        [
+          {
+            "node": "Is AI Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Client (AI Mode)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Client Mode": {
+      "main": [
+        [
+          {
+            "node": "Client Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client (AI Mode)": {
+      "main": [
+        [
+          {
+            "node": "Force AI Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is AI Mode?": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop (MANUAL Mode)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Force AI Mode": {
+      "main": [
+        [
+          {
+            "node": "Is AI Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "tags": []
+}
